@@ -1,3 +1,6 @@
+const selectorBuscar = '#MainContent_btnBuscar'
+const selectorHora = '#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_0_cmdSeleccionarHora_9'
+
 describe('Login automatizado en Bilbao Kirolak', () => {
   it('Cambia idioma, accede al login e inicia sesión', () => {
     cy.visit('https://bilbaokirolak.eus/virtual/site/instalaciones/', {
@@ -65,45 +68,32 @@ describe('Login automatizado en Bilbao Kirolak', () => {
 
 
 
-    seleccionarFechaPorDia('lunes')
+    seleccionarFechaPorDia('miércoles')
 
 
 
     // cy.get('[data-id="MainContent_cboFecha"]').click({ force: true })
 
     // === Clic en BUSCAR ===
-    cy.get('#MainContent_btnBuscar').click()
+
+    cy.get(selectorBuscar).click()
+
+    esperarHastaLas18().then(() => {
+      // Continuar con el proceso cuando ya son las 18:00
+      cy.get(selectorHora, { timeout: 10000 }).should('be.visible').click()
+
+      cy.get('#MainContent_ucFormasPago_rbtTarjeta', { timeout: 10000 }).should('exist')
+      cy.get('#MainContent_ucFormasPago_rbtTarjeta').check({ force: true })
+      cy.get('#MainContent_chkCondiciones').check({ force: true })
+      cy.get('#MainContent_btnConfirmar', { timeout: 10000 }).should('not.be.disabled').click({ force: true })
+    })
 
 
-    cy.get('#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_0_cmdSeleccionarHora_9')
-      .should('be.visible')
-      .click()
 
 
-    // 2. Esperar a que cargue la siguiente pantalla (usamos el radio como referencia)
-    cy.get('#MainContent_ucFormasPago_rbtTarjeta', { timeout: 10000 })
-      .should('exist')
 
-    // 3. Selecciona Tarjeta de crédito
-    cy.get('#MainContent_ucFormasPago_rbtTarjeta')
-      .check({ force: true })
-
-    // 4. Acepta las condiciones
-    cy.get('#MainContent_chkCondiciones')
-      .check({ force: true })
-
-    // 5. Espera a que el botón "Reservar" esté habilitado y haz clic
-    cy.get('#MainContent_btnConfirmar', { timeout: 10000 })
-      .should('not.be.disabled')
-      .click({ force: true })
 
   })
-
-
-
-
-
-
 })
 
 function seleccionarFechaPorDia(dia, intento = 0) {
@@ -141,4 +131,54 @@ function seleccionarFechaPorDia(dia, intento = 0) {
     })
 
 }
+
+
+
+function esperarHastaLas18() {
+  return new Cypress.Promise((resolve) => {
+    const intentar = () => {
+      const horaActual = new Date().getHours()
+      if (horaActual >= 18) {
+        resolve()
+      } else {
+        setTimeout(intentar, 1000) // Revisa cada 1 segundo
+      }
+    }
+    intentar()
+  })
+}
+
+// // Espera hasta que la hora del sistema sea >= 18
+// function esperarHastaLas18() {
+//   return new Cypress.Promise((resolve) => {
+//     const intentar = () => {
+//       const horaActual = new Date().getHours()
+//       if (horaActual >= 18) {
+//         resolve()
+//       } else {
+//         cy.log('No es hora aún, esperando 30s...')
+//         cy.get(selectorBuscar).click()
+//         setTimeout(intentar, 10000)
+//       }
+//     }
+//     intentar()
+//   })
+// }
+
+// // Espera hasta que el botón esté visible (verifica cada 500ms)
+// function esperarBotonVisible() {
+//   return new Cypress.Promise((resolve) => {
+//     const intentar = () => {
+//       cy.get('body').then(($body) => {
+//         if ($body.find(selectorHora).length > 0 && $body.find(selectorHora).is(':visible')) {
+//           resolve()
+//         } else {
+//           cy.get(selectorBuscar).click()
+//           setTimeout(intentar, 500)
+//         }
+//       })
+//     }
+//     intentar()
+//   })
+// }
 
