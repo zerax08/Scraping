@@ -124,17 +124,12 @@ function seleccionarFechaPorDia(dia, intento = 0) {
 }
 
 function esperarHastaLaHora() {
-    return new Cypress.Promise((resolve) => {
-        const intentar = () => {
-            const horaActual = new Date().getHours();
-            if (horaActual >= HOUR) {
-                resolve();
-            } else {
-                setTimeout(intentar, 1000); // Revisa cada 1 segundo
-            }
-        };
-        intentar();
-    });
+    const horaActual = new Date().getHours();   
+    if (horaActual >= HOUR) {
+        return cy.wrap(null); // Resolves immediately if the condition is met
+    } else {
+        return cy.wait(300).then(() => esperarHastaLaHora()); // Waits for 1 second and recurses
+    }
 }
 
 // // Espera hasta que la hora del sistema sea >= 18
