@@ -17,62 +17,42 @@ describe("Login automatizado en Bilbao Kirolak", () => {
 
         cy.wait(2000);
 
-        // Quitar modal si aparece
-        cy.window().then((win) => {
-            win.document.querySelector("#bccs-buttonAgree")?.click();
-            win.document.querySelector(".modal-backdrop")?.remove();
-            win.document.querySelector(".modal")?.remove();
-            win.document.body.style.overflow = "auto";
-        });
+        cy.get("#bccs-buttonAgree").click();
 
-        // Cambiar idioma a castellano
         cy.get("#ucMenuCabecera_lnkCastellano").click();
 
-        // Ir al login
         cy.get("#ucMenuCabecera_hlIdentificar").click();
 
-        // Asegurar que cargó el login en español
         cy.contains("Acceso mediante usuario").should("be.visible");
 
-        // Escribir credenciales (¡usa las tuyas reales si tienes!)
         cy.get("#MainContent_txtCodigoP_txtA2TextBox").type(WEB_USERNAME); // sustituye por tu NIF/código
         cy.get("#MainContent_txtPasswordP_txtA2TextBox")
             .should("be.visible")
-            .click({ force: true }) // enfocar primero
+            .click({ force: true })
             .type(WEB_PASSWORD, { delay: 50, force: true });
 
-        // Clic en botón de login
         cy.get("#MainContent_btnLoginP").click();
 
         cy.url().should("include", "/virtual/site/instalaciones");
 
-        // Click en "NUEVA RESERVA"
         cy.get("#MainContent_ucMenuIndex_repMenu_hlRepMenu_0").should("be.visible").click();
 
         cy.get('[data-id="MainContent_cboFilialesInsta"]').click();
 
-        // Selecciona la opción por su texto
         cy.get(".dropdown-menu.show .inner").contains(LOCATION).click();
 
-        // Esperar a que el select de grupos se actualice
         cy.get("#MainContent_cboGrupos", { timeout: 10000 }).should("contain.text", "PADEL CUBIERTO"); // Verificamos que ya esté en el select HTML
 
-        // Abrir dropdown visual de grupos
         cy.get('[data-id="MainContent_cboGrupos"]').click();
 
-        // Esperar a que aparezca el menú visual con PADEL CUBIERTO
         cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
 
         seleccionarFechaPorDia(DAY);
 
-        // cy.get('[data-id="MainContent_cboFecha"]').click({ force: true })
-
-        // === Clic en BUSCAR ===
 
         cy.get(selectorBuscar).click();
 
         esperarHastaLaHora().then(() => {
-            // Continuar con el proceso cuando ya son las 18:00
             cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + (HOUR - 8), { timeout: 10000 })
                 .should("be.visible")
                 .click();
@@ -93,10 +73,8 @@ describe("Login automatizado en Bilbao Kirolak", () => {
 function seleccionarFechaPorDia(dia, intento = 0) {
     const diaRegex = new RegExp(`^${dia},`, "i");
 
-    // Asegurarse de que el botón visual esté visible antes del click
     cy.get('[data-id="MainContent_cboFecha"]').should("be.visible").click({ force: true });
 
-    // Esperar a que se abra el dropdown y tenga opciones
     cy.get(".dropdown-menu.show .inner a", { timeout: 8000 })
         .should("have.length.at.least", 1)
         .then(($opciones) => {
@@ -126,9 +104,9 @@ function seleccionarFechaPorDia(dia, intento = 0) {
 function esperarHastaLaHora() {
     const horaActual = new Date().getHours();   
     if (horaActual >= HOUR) {
-        return cy.wrap(null); // Resolves immediately if the condition is met
+        return cy.wrap(null); 
     } else {
-        return cy.wait(300).then(() => esperarHastaLaHora()); // Waits for 1 second and recurses
+        return cy.wait(300).then(() => esperarHastaLaHora());
     }
 }
 
