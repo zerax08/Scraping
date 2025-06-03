@@ -17,55 +17,45 @@ describe("Login automatizado en Bilbao Kirolak", () => {
 
         cy.wait(2000);
 
+        // Acepta cookies
         cy.get("#bccs-buttonAgree").click();
-
         cy.get("#ucMenuCabecera_lnkCastellano").click();
-
         cy.get("#ucMenuCabecera_hlIdentificar").click();
-
         cy.contains("Acceso mediante usuario").should("be.visible");
 
-        cy.get("#MainContent_txtCodigoP_txtA2TextBox").type(WEB_USERNAME); // sustituye por tu NIF/código
-        cy.get("#MainContent_txtPasswordP_txtA2TextBox")
-            .should("be.visible")
-            .click({ force: true })
-            .type(WEB_PASSWORD, { delay: 50, force: true });
+        // Espera hasta que falten 2 minutos para la hora de reserva para evitar inactividad
+        esperarHasta2MinutosAntes().then(() => {
+            cy.get("#MainContent_txtCodigoP_txtA2TextBox").type(WEB_USERNAME);
+            cy.get("#MainContent_txtPasswordP_txtA2TextBox").should("be.visible").click({ force: true }).type(WEB_PASSWORD, { delay: 50, force: true });
+            cy.get("#MainContent_btnLoginP").click();
 
-        cy.get("#MainContent_btnLoginP").click();
+            // Hace la busqueda inicial
+            cy.url().should("include", "/virtual/site/instalaciones");
+            cy.get("#MainContent_ucMenuIndex_repMenu_hlRepMenu_0").should("be.visible").click();
+            cy.get('[data-id="MainContent_cboFilialesInsta"]').click();
+            cy.get(".dropdown-menu.show .inner").contains(LOCATION).click();
+            cy.get("#MainContent_cboGrupos", { timeout: 10000 }).should("contain.text", "PADEL CUBIERTO");
+            cy.get('[data-id="MainContent_cboGrupos"]').click();
+            cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
+            seleccionarFechaPorDia(DAY);
+            cy.get(selectorBuscar).click();
 
-        cy.url().should("include", "/virtual/site/instalaciones");
+            // Intento de reserva
+            esperarHastaLaHora().then(() => {
+                cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + (HOUR - 8), { timeout: 10000 })
+                    .should("be.visible")
+                    .click();
 
-        cy.get("#MainContent_ucMenuIndex_repMenu_hlRepMenu_0").should("be.visible").click();
-
-        cy.get('[data-id="MainContent_cboFilialesInsta"]').click();
-
-        cy.get(".dropdown-menu.show .inner").contains(LOCATION).click();
-
-        cy.get("#MainContent_cboGrupos", { timeout: 10000 }).should("contain.text", "PADEL CUBIERTO"); // Verificamos que ya esté en el select HTML
-
-        cy.get('[data-id="MainContent_cboGrupos"]').click();
-
-        cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
-
-        seleccionarFechaPorDia(DAY);
-
-
-        cy.get(selectorBuscar).click();
-
-        esperarHastaLaHora().then(() => {
-            cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + (HOUR - 8), { timeout: 10000 })
-                .should("be.visible")
-                .click();
-
-            if (PAY_METHOD == 0) {
-                cy.get("#MainContent_ucFormasPago_rbtTarjeta", { timeout: 10000 }).should("exist");
-                cy.get("#MainContent_ucFormasPago_rbtTarjeta").check({ force: true });
-            } else if (PAY_METHOD == 1) {
-                cy.get("#MainContent_ucFormasPago_rbtBizum", { timeout: 10000 }).should("exist");
-                cy.get("#MainContent_ucFormasPago_rbtBizum").check({ force: true });
-            }
-            cy.get("#MainContent_chkCondiciones").check({ force: true });
-            cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
+                if (PAY_METHOD == 0) {
+                    cy.get("#MainContent_ucFormasPago_rbtTarjeta", { timeout: 10000 }).should("exist");
+                    cy.get("#MainContent_ucFormasPago_rbtTarjeta").check({ force: true });
+                } else if (PAY_METHOD == 1) {
+                    cy.get("#MainContent_ucFormasPago_rbtBizum", { timeout: 10000 }).should("exist");
+                    cy.get("#MainContent_ucFormasPago_rbtBizum").check({ force: true });
+                }
+                cy.get("#MainContent_chkCondiciones").check({ force: true });
+                cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
+            });
         });
     });
 });
@@ -102,11 +92,23 @@ function seleccionarFechaPorDia(dia, intento = 0) {
 }
 
 function esperarHastaLaHora() {
-    const horaActual = new Date().getHours();   
+    const horaActual = new Date().getHours();
     if (horaActual >= HOUR) {
-        return cy.wrap(null); 
+        return cy.wrap(null);
     } else {
         return cy.wait(300).then(() => esperarHastaLaHora());
+    }
+}
+
+function esperarHasta2MinutosAntes() {
+    const horaActual = new Date();
+    const horaObjetivo = new Date(horaActual.getFullYear(), horaActual.getMonth(), horaActual.getDate(), HOUR, 0, 0);
+    horaObjetivo.setMinutes(horaObjetivo.getMinutes() - 50);
+
+    if (horaActual >= horaObjetivo) {
+        return cy.wrap(null);
+    } else {
+        return cy.wait(2000).then(() => esperarHasta2MinutosAntes());
     }
 }
 
