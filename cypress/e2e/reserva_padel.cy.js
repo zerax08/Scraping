@@ -67,25 +67,25 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                     });
 
 
-                    cy.origin('https://ppii.redsys.es', () => {
-                        let intentos = 0;
+                    // cy.origin('https://ppii.redsys.es', () => {
+                    //     let intentos = 0;
 
-                        const esperarRedireccionASis = () => {
-                            return cy.location('origin').then((origin) => {
-                                if (origin.includes("sis.redsys.es")) {
-                                    return cy.wrap(true);
-                                } else if (intentos >= 240) {
-                                    throw new Error("No se redirigió a sis.redsys.es tras autorizar en la app.");
-                                } else {
-                                    intentos++;
-                                    return cy.wait(1000).then(esperarRedireccionASis);
-                                }
-                            });
-                        };
+                    //     const esperarRedireccionASis = () => {
+                    //         return cy.location('origin').then((origin) => {
+                    //             if (origin.includes("sis.redsys.es")) {
+                    //                 return cy.wrap(true);
+                    //             } else if (intentos >= 240) {
+                    //                 throw new Error("No se redirigió a sis.redsys.es tras autorizar en la app.");
+                    //             } else {
+                    //                 intentos++;
+                    //                 return cy.wait(1000).then(esperarRedireccionASis);
+                    //             }
+                    //         });
+                    //     };
 
-                        // Esperar hasta que cambie el origen
-                        esperarRedireccionASis();
-                    });
+                    //     // Esperar hasta que cambie el origen
+                    //     esperarRedireccionASis();
+                    // });
 
 
                     // esperarRedireccionABilbaoKirolak().then(() => {
