@@ -146,7 +146,7 @@ function esperarHastaLaHora() {
 function esperarHasta2MinutosAntes() {
     const horaActual = new Date();
     const horaObjetivo = new Date(horaActual.getFullYear(), horaActual.getMonth(), horaActual.getDate(), HOUR, 0, 0);
-    horaObjetivo.setMinutes(horaObjetivo.getMinutes() - 50);
+    horaObjetivo.setMinutes(horaObjetivo.getMinutes() - 2);
 
     if (horaActual >= horaObjetivo) {
         return cy.wrap(null);
