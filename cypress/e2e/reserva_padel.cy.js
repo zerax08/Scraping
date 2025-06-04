@@ -12,10 +12,12 @@ const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 
 describe("Login automatizado en Bilbao Kirolak", () => {
     it("Cambia idioma, accede al login e inicia sesión", () => {
+
+        cy.task("log", "✅ CYPRESS TEST STARTED");
+
         cy.visit("https://bilbaokirolak.eus/virtual/site/instalaciones/", {
             failOnStatusCode: false,
         });
-
         cy.wait(2000);
 
         // Acepta cookies
@@ -24,8 +26,11 @@ describe("Login automatizado en Bilbao Kirolak", () => {
         cy.get("#ucMenuCabecera_hlIdentificar").click();
         cy.contains("Acceso mediante usuario").should("be.visible");
 
+        cy.screenshot();
+
         // Espera hasta que falten 2 minutos para la hora de reserva para evitar inactividad
         esperarHasta2MinutosAntes().then(() => {
+            cy.task("log", "Logged In Successfully");
             cy.get("#MainContent_txtCodigoP_txtA2TextBox").type(WEB_USERNAME);
             cy.get("#MainContent_txtPasswordP_txtA2TextBox").should("be.visible").click({ force: true }).type(WEB_PASSWORD, { delay: 50, force: true });
             cy.get("#MainContent_btnLoginP").click();
@@ -41,8 +46,11 @@ describe("Login automatizado en Bilbao Kirolak", () => {
             seleccionarFechaPorDia(DAY);
             cy.get(selectorBuscar).click();
 
+            cy.screenshot();
+
             // Intento de reserva
             esperarHastaLaHora().then(() => {
+                cy.task("log", "Time is now " + new Date().toLocaleTimeString());
                 cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + (HOUR - 8), { timeout: 10000 })
                     .should("be.visible")
                     .click();
@@ -58,14 +66,13 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                 cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
 
                 if (PAY_METHOD == 1) {
-
-                    cy.origin('https://ppii.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
-                        cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
-                        cy.get('#iPhBizInit').type(PHONE);
-                        cy.get('#bBizInit').should('not.be.disabled');
-                        cy.get('#bBizInit').click();
+                    cy.origin("https://ppii.redsys.es", { args: { PHONE } }, ({ PHONE }) => {
+                        cy.task("log", "Bizum plataform");
+                        cy.get("#iPhBizInit", { timeout: 15000 }).should("be.visible");
+                        cy.get("#iPhBizInit").type(PHONE);
+                        cy.get("#bBizInit").should("not.be.disabled");
+                        cy.get("#bBizInit").click();
                     });
-
 
                     // cy.origin('https://ppii.redsys.es', () => {
                     //     let intentos = 0;
@@ -87,7 +94,6 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                     //     esperarRedireccionASis();
                     // });
 
-
                     // esperarRedireccionABilbaoKirolak().then(() => {
                     //     cy.url().should('include', '/virtual/site/instalaciones');
                     //     cy.log('✅ Redirigido de vuelta a Bilbao Kirolak correctamente');
@@ -95,9 +101,7 @@ describe("Login automatizado en Bilbao Kirolak", () => {
 
                     // cy.screenshot('reserva-finalizada');
                     // cy.log('🎉 Reserva completada con éxito');
-
                 }
-
             });
         });
     });
@@ -137,8 +141,10 @@ function seleccionarFechaPorDia(dia, intento = 0) {
 function esperarHastaLaHora() {
     const horaActual = new Date().getHours();
     if (horaActual >= HOUR) {
+        cy.task("log", "It is now the reservation time or later");
         return cy.wrap(null);
     } else {
+        cy.task("log", "Waiting until the reservation time");
         return cy.wait(300).then(() => esperarHastaLaHora());
     }
 }
@@ -149,8 +155,10 @@ function esperarHasta2MinutosAntes() {
     horaObjetivo.setMinutes(horaObjetivo.getMinutes() - 2);
 
     if (horaActual >= horaObjetivo) {
+        cy.task("log", "It is now 2 minutes before the reservation time or later");
         return cy.wrap(null);
     } else {
+        cy.task("log", "wating 2 minutes before the reservation time");
         return cy.wait(2000).then(() => esperarHasta2MinutosAntes());
     }
 }
@@ -159,7 +167,7 @@ function esperarCambioDePpiiASis(maxIntentos = 300) {
     let intentos = 0;
 
     const comprobar = () => {
-        return cy.location('origin').then((origin) => {
+        return cy.location("origin").then((origin) => {
             if (origin.includes("sis.redsys.es")) {
                 return cy.wrap(true);
             } else if (intentos >= maxIntentos) {
@@ -173,7 +181,6 @@ function esperarCambioDePpiiASis(maxIntentos = 300) {
 
     return comprobar();
 }
-
 
 // function esperarRedireccionABilbaoKirolak(maxIntentos = 120) {
 //     let intentos = 0;
@@ -193,9 +200,6 @@ function esperarCambioDePpiiASis(maxIntentos = 300) {
 
 //     return comprobar();
 // }
-
-
-
 
 // // Espera hasta que la hora del sistema sea >= 18
 // function esperarHastaLas18() {
