@@ -56,7 +56,7 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                 }
                 cy.get("#MainContent_chkCondiciones").check({ force: true });
                 cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
-                cy.origin('https://ppli.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
+                cy.origin('https://ppii.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
                     cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
                     cy.get('#iPhBizInit').type(PHONE);
                     cy.get('#bBizInit').should('not.be.disabled');
