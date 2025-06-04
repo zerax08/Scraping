@@ -33,9 +33,9 @@ module.exports = defineConfig({
                     launchOptions.args.push("--disable-gpu");
                     launchOptions.args.push("--disable-software-rasterizer");
                     launchOptions.args.push("--disable-dev-shm-usage");
-                    launchOptions.args.push("--disable-background-networking");
                     launchOptions.args.push("--disable-extensions");
                     launchOptions.args.push("--no-sandbox");
+                    launchOptions.args.push("--disable-features=Vulkan"); // ← DISABLE Vulkan here
                 }
                 return launchOptions;
             });
