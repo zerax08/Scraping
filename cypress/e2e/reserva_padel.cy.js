@@ -56,12 +56,47 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                 }
                 cy.get("#MainContent_chkCondiciones").check({ force: true });
                 cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
-                cy.origin('https://ppii.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
-                    cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
-                    cy.get('#iPhBizInit').type(PHONE);
-                    cy.get('#bBizInit').should('not.be.disabled');
-                    cy.get('#bBizInit').click();
-                });
+
+                if (PAY_METHOD == 1) {
+
+                    cy.origin('https://ppii.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
+                        cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
+                        cy.get('#iPhBizInit').type(PHONE);
+                        cy.get('#bBizInit').should('not.be.disabled');
+                        cy.get('#bBizInit').click();
+                    });
+
+
+                    cy.origin('https://ppii.redsys.es', () => {
+                        let intentos = 0;
+
+                        const esperarRedireccionASis = () => {
+                            return cy.location('origin').then((origin) => {
+                                if (origin.includes("sis.redsys.es")) {
+                                    return cy.wrap(true);
+                                } else if (intentos >= 240) {
+                                    throw new Error("No se redirigió a sis.redsys.es tras autorizar en la app.");
+                                } else {
+                                    intentos++;
+                                    return cy.wait(1000).then(esperarRedireccionASis);
+                                }
+                            });
+                        };
+
+                        // Esperar hasta que cambie el origen
+                        esperarRedireccionASis();
+                    });
+
+
+                    // esperarRedireccionABilbaoKirolak().then(() => {
+                    //     cy.url().should('include', '/virtual/site/instalaciones');
+                    //     cy.log('✅ Redirigido de vuelta a Bilbao Kirolak correctamente');
+                    // });
+
+                    // cy.screenshot('reserva-finalizada');
+                    // cy.log('🎉 Reserva completada con éxito');
+
+                }
 
             });
         });
@@ -119,6 +154,48 @@ function esperarHasta2MinutosAntes() {
         return cy.wait(2000).then(() => esperarHasta2MinutosAntes());
     }
 }
+
+function esperarCambioDePpiiASis(maxIntentos = 300) {
+    let intentos = 0;
+
+    const comprobar = () => {
+        return cy.location('origin').then((origin) => {
+            if (origin.includes("sis.redsys.es")) {
+                return cy.wrap(true);
+            } else if (intentos >= maxIntentos) {
+                throw new Error("No se redirigió a https://sis.redsys.es tras autorizar en la app bancaria.");
+            } else {
+                intentos++;
+                return cy.wait(1000).then(comprobar);
+            }
+        });
+    };
+
+    return comprobar();
+}
+
+
+// function esperarRedireccionABilbaoKirolak(maxIntentos = 120) {
+//     let intentos = 0;
+
+//     const comprobar = () => {
+//         return cy.location('origin').then((origin) => {
+//             if (origin.includes("bilbaokirolak.eus")) {
+//                 return cy.wrap(true);
+//             } else if (intentos >= maxIntentos) {
+//                 throw new Error("No se redirigió a Bilbao Kirolak en el tiempo esperado.");
+//             } else {
+//                 intentos++;
+//                 return cy.wait(1000).then(() => comprobar());
+//             }
+//         });
+//     };
+
+//     return comprobar();
+// }
+
+
+
 
 // // Espera hasta que la hora del sistema sea >= 18
 // function esperarHastaLas18() {
