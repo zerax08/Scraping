@@ -13,6 +13,7 @@ module.exports = defineConfig({
             config.env.HOUR = process.env.HOUR;
             config.env.COURT = process.env.COURT;
             config.env.PAY_METHOD = process.env.PAY_METHOD;
+            config.env.PHONE = process.env.PHONE;
             return config;
         },
     },

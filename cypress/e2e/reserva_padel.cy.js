@@ -3,6 +3,7 @@ const selectorBuscar = "#MainContent_btnBuscar";
 
 const WEB_USERNAME = Cypress.env("WEB_USERNAME");
 const WEB_PASSWORD = Cypress.env("WEB_PASSWORD");
+const PHONE = Cypress.env("PHONE");
 const LOCATION = Cypress.env("LOCATION");
 const DAY = Cypress.env("DAY");
 const HOUR = Number(Cypress.env("HOUR"));
@@ -55,6 +56,13 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                 }
                 cy.get("#MainContent_chkCondiciones").check({ force: true });
                 cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
+                cy.origin('https://ppli.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
+                    cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
+                    cy.get('#iPhBizInit').type(PHONE);
+                    cy.get('#bBizInit').should('not.be.disabled');
+                    cy.get('#bBizInit').click();
+                });
+
             });
         });
     });
