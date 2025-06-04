@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  cypress-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      DEBUG: "" 
+    volumes:
+      - .:/e2e
+      - ./screenshots:/e2e/cypress/screenshots
+    working_dir: /e2e
