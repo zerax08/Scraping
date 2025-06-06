@@ -12,7 +12,6 @@ const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 
 describe("Login automatizado en Bilbao Kirolak", () => {
     it("Cambia idioma, accede al login e inicia sesión", () => {
-
         cy.task("log", "✅ CYPRESS TEST STARTED");
 
         cy.visit("https://bilbaokirolak.eus/virtual/site/instalaciones/", {
@@ -26,7 +25,7 @@ describe("Login automatizado en Bilbao Kirolak", () => {
         cy.get("#ucMenuCabecera_hlIdentificar").click();
         cy.contains("Acceso mediante usuario").should("be.visible");
 
-        cy.screenshot();
+        cy.screenshot(new Date().toISOString() + " - Login Page");
 
         // Espera hasta que falten 2 minutos para la hora de reserva para evitar inactividad
         esperarHasta2MinutosAntes().then(() => {
@@ -44,14 +43,15 @@ describe("Login automatizado en Bilbao Kirolak", () => {
             cy.get('[data-id="MainContent_cboGrupos"]').click();
             cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
             seleccionarFechaPorDia(DAY);
-            cy.get(selectorBuscar).click();
 
-            cy.screenshot();
-
-            // Intento de reserva
             esperarHastaLaHora().then(() => {
+                cy.get(selectorBuscar).click();
+
+                // Intento de reserva
+                cy.screenshot(new Date().toISOString() + " - Search Page");
+                const hoursId = DAY == "sábado" || DAY == "domingo" ? HOUR - 9 : HOUR - 8;
                 cy.task("log", "Time is now " + new Date().toLocaleTimeString());
-                cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + (HOUR - 8), { timeout: 10000 })
+                cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + hoursId, { timeout: 10000 })
                     .should("be.visible")
                     .click();
 
@@ -62,7 +62,11 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                     cy.get("#MainContent_ucFormasPago_rbtBizum", { timeout: 10000 }).should("exist");
                     cy.get("#MainContent_ucFormasPago_rbtBizum").check({ force: true });
                 }
+
                 cy.get("#MainContent_chkCondiciones").check({ force: true });
+
+                cy.screenshot(new Date().toISOString() + " - Reverve Page");
+
                 cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
 
                 if (PAY_METHOD == 1) {
@@ -73,6 +77,8 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                         cy.get("#bBizInit").should("not.be.disabled");
                         cy.get("#bBizInit").click();
                     });
+
+                    cy.screenshot(new Date().toISOString() + " - Bizum Page");
 
                     // cy.origin('https://ppii.redsys.es', () => {
                     //     let intentos = 0;
