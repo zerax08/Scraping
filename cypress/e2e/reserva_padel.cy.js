@@ -10,6 +10,7 @@ let HOUR = Number(Cypress.env("HOUR"));
 const COURT = Number(Cypress.env("COURT"));
 const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 const BIZUM_TIMEOUT = Number(Cypress.env("BIZUM_TIMEOUT"));
+const FAVORITE_COURT = Boolean(Cypress.env("FAVORITE_COURT"));
 
 let intentos = 0;
 
@@ -190,10 +191,20 @@ function esperarHasta2MinutosAntes() {
 }
 
 function intentarSeleccionarCancha(intento = 1) {
+    // const ordenCancha = () => {
+    //     const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
+    //     const sinFavorita = canchas.filter(c => c !== COURT);
+    //     return [COURT, ...sinFavorita];
+    // };
+
     const ordenCancha = () => {
-        const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
-        const sinFavorita = canchas.filter(c => c !== COURT);
-        return [COURT, ...sinFavorita];
+        if (FAVORITE_COURT) {
+            return [COURT]; // Solo intenta con la cancha favorita
+        } else {
+            const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
+            const sinFavorita = canchas.filter(c => c !== COURT);
+            return [COURT, ...sinFavorita]; // Intenta favorita primero, luego las demás
+        }
     };
 
     const lista = ordenCancha();
