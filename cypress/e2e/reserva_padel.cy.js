@@ -65,11 +65,7 @@ describe("Login automatizado en Bilbao Kirolak", () => {
             }
 
             esperarHastaLaHora().then(() => {
-                cy.get(selectorBuscar).click();
-
-                cy.get(`#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_${COURT - 1}_cmdSeleccionarHora_${HOUR - 8}`, { timeout: 10000 })
-                    .should("be.visible")
-                    .click();
+                intentarSeleccionarCancha();
 
                 if (PAY_METHOD === 0) {
                     cy.get("#MainContent_ucFormasPago_rbtTarjeta", { timeout: 10000 }).should("exist");
@@ -191,5 +187,51 @@ function esperarHasta2MinutosAntes() {
     } else {
         return cy.wait(2000).then(() => esperarHasta2MinutosAntes());
     }
+}
+
+function intentarSeleccionarCancha(intento = 1) {
+    const ordenCancha = () => {
+        const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
+        const sinFavorita = canchas.filter(c => c !== COURT);
+        return [COURT, ...sinFavorita];
+    };
+
+    const lista = ordenCancha();
+
+    cy.get(selectorBuscar).click();
+
+    // Esperar explícitamente a que se cargue la cancha favorita, aunque esté deshabilitada
+    const selectorCarga = `#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_${COURT - 1}_cmdSeleccionarHora_${HOUR - 8}`;
+
+    cy.get('body').find(selectorCarga, { timeout: 10000 }).should('exist').then(() => {
+        probarCanchaPorLista(lista, 0, intento);
+    });
+}
+
+function probarCanchaPorLista(lista, index, intento) {
+    if (index >= lista.length) {
+        if (intento < 2) {
+            cy.log('Ninguna cancha visible, reintentando...');
+            intentarSeleccionarCancha(intento + 1);
+        } else {
+            cy.screenshot(`fallo_seleccion_cancha_intento_${intento}`);
+            throw new Error('⚠️ No se pudo seleccionar ninguna cancha visible en los dos intentos.');
+        }
+        return;
+    }
+
+    const court = lista[index];
+    const selector = `#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_${court - 1}_cmdSeleccionarHora_${HOUR - 8}`;
+
+    cy.get('body').then($body => {
+        const $el = $body.find(selector);
+        if ($el.length > 0 && !$el.hasClass('aspNetDisabled')) {
+            cy.get(selector, { timeout: 10000 }).should('be.visible').click({ force: true }).then(() => {
+                cy.log(`✅ Cancha ${court} seleccionada`);
+            });
+        } else {
+            probarCanchaPorLista(lista, index + 1, intento);
+        }
+    });
 }
 
