@@ -6,7 +6,7 @@ const WEB_PASSWORD = Cypress.env("WEB_PASSWORD");
 const PHONE = Cypress.env("PHONE");
 const LOCATION = Cypress.env("LOCATION");
 const DAY = Cypress.env("DAY");
-const HOUR = Number(Cypress.env("HOUR"));
+let HOUR = Number(Cypress.env("HOUR"));
 const COURT = Number(Cypress.env("COURT"));
 const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 
@@ -39,10 +39,16 @@ describe("Login automatizado en Bilbao Kirolak", () => {
             cy.get('[data-id="MainContent_cboGrupos"]').click();
             cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
             seleccionarFechaPorDia(DAY);
-            cy.get(selectorBuscar).click();
+
+
+            if (DAY == 'domingo') {
+                HOUR--;
+            }
 
             // Intento de reserva
             esperarHastaLaHora().then(() => {
+                cy.get(selectorBuscar).click();
+
                 cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + (HOUR - 8), { timeout: 10000 })
                     .should("be.visible")
                     .click();
@@ -59,43 +65,47 @@ describe("Login automatizado en Bilbao Kirolak", () => {
 
                 if (PAY_METHOD == 1) {
 
+                    // 1. Ignorar errores de Redsys desde el principio
+                    cy.origin('https://sis.redsys.es', () => {
+                        cy.on('uncaught:exception', () => false);
+                    });
+
+                    // 2. Entrar en ppii.redsys.es y realizar login + espera de redirección DENTRO del mismo bloque
                     cy.origin('https://ppii.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
+
+                        cy.on('uncaught:exception', () => false);
+
                         cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
                         cy.get('#iPhBizInit').type(PHONE);
                         cy.get('#bBizInit').should('not.be.disabled');
                         cy.get('#bBizInit').click();
+
+                        let intentos = 0;
+                        const esperarYSaltar = () => {
+                            cy.location('origin').then((origin) => {
+                                if (origin.includes('sis.redsys.es')) {
+                                    cy.document().then((doc) => {
+                                        const boton = doc.querySelector('.btn-continue');
+                                        if (boton) {
+                                            cy.get('.btn-continue').click({ force: true });
+                                        } else if (intentos < 60) {
+                                            intentos++;
+                                            cy.wait(1000).then(esperarYSaltar);
+                                        } else {
+                                            cy.log('⚠️ Botón "Continuar" no apareció en 60s.');
+                                        }
+                                    });
+                                } else if (intentos < 60) {
+                                    intentos++;
+                                    cy.wait(1000).then(esperarYSaltar);
+                                } else {
+                                    cy.log('❌ No se redirigió a sis.redsys.es en 60s.');
+                                }
+                            });
+                        };
+
+                        cy.wait(3000).then(esperarYSaltar);
                     });
-
-
-                    // cy.origin('https://ppii.redsys.es', () => {
-                    //     let intentos = 0;
-
-                    //     const esperarRedireccionASis = () => {
-                    //         return cy.location('origin').then((origin) => {
-                    //             if (origin.includes("sis.redsys.es")) {
-                    //                 return cy.wrap(true);
-                    //             } else if (intentos >= 240) {
-                    //                 throw new Error("No se redirigió a sis.redsys.es tras autorizar en la app.");
-                    //             } else {
-                    //                 intentos++;
-                    //                 return cy.wait(1000).then(esperarRedireccionASis);
-                    //             }
-                    //         });
-                    //     };
-
-                    //     // Esperar hasta que cambie el origen
-                    //     esperarRedireccionASis();
-                    // });
-
-
-                    // esperarRedireccionABilbaoKirolak().then(() => {
-                    //     cy.url().should('include', '/virtual/site/instalaciones');
-                    //     cy.log('✅ Redirigido de vuelta a Bilbao Kirolak correctamente');
-                    // });
-
-                    // cy.screenshot('reserva-finalizada');
-                    // cy.log('🎉 Reserva completada con éxito');
-
                 }
 
             });
