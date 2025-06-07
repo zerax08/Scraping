@@ -10,22 +10,28 @@ let HOUR = Number(Cypress.env("HOUR"));
 const COURT = Number(Cypress.env("COURT"));
 const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 
+
+
+
+
 describe("Login automatizado en Bilbao Kirolak", () => {
     it("Cambia idioma, accede al login e inicia sesión", () => {
-        cy.visit("https://bilbaokirolak.eus/virtual/site/instalaciones/", {
-            failOnStatusCode: false,
-        });
 
-        cy.wait(2000);
 
-        // Acepta cookies
-        cy.get("#bccs-buttonAgree").click();
-        cy.get("#ucMenuCabecera_lnkCastellano").click();
-        cy.get("#ucMenuCabecera_hlIdentificar").click();
-        cy.contains("Acceso mediante usuario").should("be.visible");
-
-        // Espera hasta que falten 2 minutos para la hora de reserva para evitar inactividad
         esperarHasta2MinutosAntes().then(() => {
+
+            cy.visit("https://bilbaokirolak.eus/virtual/site/instalaciones/", {
+                failOnStatusCode: false,
+            });
+
+            cy.wait(2000);
+
+            // Acepta cookies
+            cy.get("#bccs-buttonAgree").click();
+            cy.get("#ucMenuCabecera_lnkCastellano").click();
+            cy.get("#ucMenuCabecera_hlIdentificar").click();
+            cy.contains("Acceso mediante usuario").should("be.visible");
+
             cy.get("#MainContent_txtCodigoP_txtA2TextBox").type(WEB_USERNAME);
             cy.get("#MainContent_txtPasswordP_txtA2TextBox").should("be.visible").click({ force: true }).type(WEB_PASSWORD, { delay: 50, force: true });
             cy.get("#MainContent_btnLoginP").click();
