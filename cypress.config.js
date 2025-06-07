@@ -14,6 +14,7 @@ module.exports = defineConfig({
             config.env.COURT = process.env.COURT;
             config.env.PAY_METHOD = process.env.PAY_METHOD;
             config.env.PHONE = process.env.PHONE;
+            config.env.BIZUM_TIMEOUT = process.env.BIZUM_TIMEOUT;
             return config;
         },
     },
