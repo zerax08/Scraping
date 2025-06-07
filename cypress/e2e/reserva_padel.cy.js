@@ -10,7 +10,7 @@ let HOUR = Number(Cypress.env("HOUR"));
 const COURT = Number(Cypress.env("COURT"));
 const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 const BIZUM_TIMEOUT = Number(Cypress.env("BIZUM_TIMEOUT"));
-const FAVORITE_COURT = Boolean(Cypress.env("FAVORITE_COURT"));
+const FAVORITE_COURT = Cypress.env("FAVORITE_COURT") === "true";
 
 let intentos = 0;
 
