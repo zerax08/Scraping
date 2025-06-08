@@ -208,8 +208,13 @@ function intentarSeleccionarCancha(intento = 1) {
     };
 
     const lista = ordenCancha();
-
-    cy.get(selectorBuscar).click();
+    cy.log(`🔄 Intento ${intento}: haciendo clic en el botón de buscar`);
+    cy.get(selectorBuscar, { timeout: 10000 })
+        .should('exist')
+        .should('be.visible')
+        .then(($btn) => {
+            cy.wrap($btn).click({ force: true });
+        });
 
     // Esperar explícitamente a que se cargue la cancha favorita, aunque esté deshabilitada
     const selectorCarga = `#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_${COURT - 1}_cmdSeleccionarHora_${HOUR - 8}`;
