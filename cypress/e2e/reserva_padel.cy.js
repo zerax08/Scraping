@@ -6,35 +6,54 @@ const WEB_PASSWORD = Cypress.env("WEB_PASSWORD");
 const PHONE = Cypress.env("PHONE");
 const LOCATION = Cypress.env("LOCATION");
 const DAY = Cypress.env("DAY");
-const HOUR = Number(Cypress.env("HOUR"));
+let HOUR = Number(Cypress.env("HOUR"));
 const COURT = Number(Cypress.env("COURT"));
 const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
+const BIZUM_TIMEOUT = Number(Cypress.env("BIZUM_TIMEOUT"));
+const FAVORITE_COURT = Cypress.env("FAVORITE_COURT") === "true";
 
-describe("Login automatizado en Bilbao Kirolak", () => {
-    it("Cambia idioma, accede al login e inicia sesión", () => {
-        cy.task("log", "✅ CYPRESS TEST STARTED");
+let intentos = 0;
 
-        cy.visit("https://bilbaokirolak.eus/virtual/site/instalaciones/", {
-            failOnStatusCode: false,
+// Al inicio del test
+Cypress.on('uncaught:exception', (err, runnable) => {
+    if (
+        err.message.includes('Unexpected token') ||
+        err.message.includes('Cannot read properties') ||
+        err.message.includes('is not a function')
+    ) {
+        console.warn('Ignorando error de JS de RedSys:', err.message);
+        return false;
+    }
+});
+
+
+    beforeEach(() => {
+        cy.origin('https://sis.redsys.es', () => {
+            cy.on('uncaught:exception', () => false);
         });
-        cy.wait(2000);
+    });
 
-        // Acepta cookies
-        cy.get("#bccs-buttonAgree").click();
-        cy.get("#ucMenuCabecera_lnkCastellano").click();
-        cy.get("#ucMenuCabecera_hlIdentificar").click();
-        cy.contains("Acceso mediante usuario").should("be.visible");
-
-        cy.screenshot(new Date().toISOString() + " - Login Page");
-
-        // Espera hasta que falten 2 minutos para la hora de reserva para evitar inactividad
+    it("Cambia idioma, accede al login e inicia sesi\u00f3n", () => {
+        cy.task("log", "✅ CYPRESS TEST STARTED");
         esperarHasta2MinutosAntes().then(() => {
-            cy.task("log", "Logged In Successfully");
+            cy.visit("https://bilbaokirolak.eus/virtual/site/instalaciones/", {
+                failOnStatusCode: false,
+            });
+
+            cy.wait(2000);
+            cy.get("#bccs-buttonAgree").click();
+            cy.get("#ucMenuCabecera_lnkCastellano").click();
+            cy.get("#ucMenuCabecera_hlIdentificar").click();
+            cy.contains("Acceso mediante usuario").should("be.visible");
+
             cy.get("#MainContent_txtCodigoP_txtA2TextBox").type(WEB_USERNAME);
             cy.get("#MainContent_txtPasswordP_txtA2TextBox").should("be.visible").click({ force: true }).type(WEB_PASSWORD, { delay: 50, force: true });
+
+            cy.screenshot(new Date().toISOString() + " - Login Page");
+            cy.task("log", "Logged In Successfully");
+
             cy.get("#MainContent_btnLoginP").click();
 
-            // Hace la busqueda inicial
             cy.url().should("include", "/virtual/site/instalaciones");
             cy.get("#MainContent_ucMenuIndex_repMenu_hlRepMenu_0").should("be.visible").click();
             cy.get('[data-id="MainContent_cboFilialesInsta"]').click();
@@ -44,7 +63,7 @@ describe("Login automatizado en Bilbao Kirolak", () => {
             cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
             seleccionarFechaPorDia(DAY);
 
-            esperarHastaLaHora().then(() => {
+/*             esperarHastaLaHora().then(() => {
                 cy.get(selectorBuscar).click();
 
                 // Intento de reserva
@@ -53,12 +72,20 @@ describe("Login automatizado en Bilbao Kirolak", () => {
                 cy.task("log", "Time is now " + new Date().toLocaleTimeString());
                 cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + hoursId, { timeout: 10000 })
                     .should("be.visible")
-                    .click();
+                    .click(); */
+            if (DAY === 'domingo') {
+                HOUR--;
+            }
 
-                if (PAY_METHOD == 0) {
+            esperarHastaLaHora().then(() => {
+                cy.task("log", "Time is now " + new Date().toLocaleTimeString());
+                cy.screenshot(new Date().toISOString() + " - Search Page");
+                intentarSeleccionarCancha();
+
+                if (PAY_METHOD === 0) {
                     cy.get("#MainContent_ucFormasPago_rbtTarjeta", { timeout: 10000 }).should("exist");
                     cy.get("#MainContent_ucFormasPago_rbtTarjeta").check({ force: true });
-                } else if (PAY_METHOD == 1) {
+                } else if (PAY_METHOD === 1) {
                     cy.get("#MainContent_ucFormasPago_rbtBizum", { timeout: 10000 }).should("exist");
                     cy.get("#MainContent_ucFormasPago_rbtBizum").check({ force: true });
                 }
@@ -69,49 +96,65 @@ describe("Login automatizado en Bilbao Kirolak", () => {
 
                 cy.get("#MainContent_btnConfirmar", { timeout: 10000 }).should("not.be.disabled").click({ force: true });
 
-                if (PAY_METHOD == 1) {
-                    cy.origin("https://ppii.redsys.es", { args: { PHONE } }, ({ PHONE }) => {
-                        cy.task("log", "Bizum plataform");
-                        cy.get("#iPhBizInit", { timeout: 15000 }).should("be.visible");
-                        cy.get("#iPhBizInit").type(PHONE);
-                        cy.get("#bBizInit").should("not.be.disabled");
-                        cy.get("#bBizInit").click();
+                if (PAY_METHOD === 1) {
+                    cy.origin('https://ppii.redsys.es', { args: { PHONE } }, ({ PHONE }) => {
+                        cy.on('uncaught:exception', () => false);
+
+                        cy.get('#iPhBizInit', { timeout: 15000 }).should('be.visible');
+                        cy.get('#iPhBizInit').type(PHONE);
+                        cy.get('#bBizInit').should('not.be.disabled');
+                        cy.get('#bBizInit').click();
                     });
 
                     cy.screenshot(new Date().toISOString() + " - Bizum Page");
 
-                    // cy.origin('https://ppii.redsys.es', () => {
-                    //     let intentos = 0;
+                    cy.wait(BIZUM_TIMEOUT);
 
-                    //     const esperarRedireccionASis = () => {
-                    //         return cy.location('origin').then((origin) => {
-                    //             if (origin.includes("sis.redsys.es")) {
-                    //                 return cy.wrap(true);
-                    //             } else if (intentos >= 240) {
-                    //                 throw new Error("No se redirigió a sis.redsys.es tras autorizar en la app.");
-                    //             } else {
-                    //                 intentos++;
-                    //                 return cy.wait(1000).then(esperarRedireccionASis);
-                    //             }
-                    //         });
-                    //     };
 
-                    //     // Esperar hasta que cambie el origen
-                    //     esperarRedireccionASis();
-                    // });
+                    cy.origin('https://sis.redsys.es', () => {
+                        cy.on('uncaught:exception', () => false);
 
-                    // esperarRedireccionABilbaoKirolak().then(() => {
-                    //     cy.url().should('include', '/virtual/site/instalaciones');
-                    //     cy.log('✅ Redirigido de vuelta a Bilbao Kirolak correctamente');
-                    // });
+                        const esperarYSaltar = (i = 0) => {
+                            cy.document().then((doc) => {
+                                try {
+                                    const boton = doc.querySelector('.btn-continue');
+                                    if (boton) {
+                                        cy.get('.btn-continue').click({ force: true });
+                                    } else if (i < 240) {
+                                        cy.wait(1000).then(() => esperarYSaltar(i + 1));
+                                    } else {
+                                        cy.log('⚠️ Botón "Continuar" no apareció en 4 minutos.');
+                                    }
+                                } catch (e) {
 
-                    // cy.screenshot('reserva-finalizada');
-                    // cy.log('🎉 Reserva completada con éxito');
+                                    cy.wait(1000).then(() => esperarYSaltar(i + 1));
+                                }
+                            });
+                        };
+
+
+                        esperarYSaltar();
+                    });
                 }
+
+                cy.location('origin', { timeout: 60000 }).should('include', 'bilbaokirolak.eus');
+
+
+                cy.wait(5000);
+
+
+                cy.screenshot(new Date().toISOString() + " - Rservation Success Page");
+
+
+                cy.get('#MainContent_btnVolver').click();
+
+
+
+
             });
         });
     });
-});
+
 
 function seleccionarFechaPorDia(dia, intento = 0) {
     const diaRegex = new RegExp(`^${dia},`, "i");
@@ -169,74 +212,64 @@ function esperarHasta2MinutosAntes() {
     }
 }
 
-function esperarCambioDePpiiASis(maxIntentos = 300) {
-    let intentos = 0;
+function intentarSeleccionarCancha(intento = 1) {
+    // const ordenCancha = () => {
+    //     const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
+    //     const sinFavorita = canchas.filter(c => c !== COURT);
+    //     return [COURT, ...sinFavorita];
+    // };
 
-    const comprobar = () => {
-        return cy.location("origin").then((origin) => {
-            if (origin.includes("sis.redsys.es")) {
-                return cy.wrap(true);
-            } else if (intentos >= maxIntentos) {
-                throw new Error("No se redirigió a https://sis.redsys.es tras autorizar en la app bancaria.");
-            } else {
-                intentos++;
-                return cy.wait(1000).then(comprobar);
-            }
-        });
+    const ordenCancha = () => {
+        if (FAVORITE_COURT) {
+            return [COURT]; // Solo intenta con la cancha favorita
+        } else {
+            const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
+            const sinFavorita = canchas.filter(c => c !== COURT);
+            return [COURT, ...sinFavorita]; // Intenta favorita primero, luego las demás
+        }
     };
 
-    return comprobar();
+    const lista = ordenCancha();
+    cy.log(`🔄 Intento ${intento}: haciendo clic en el botón de buscar`);
+    cy.get(selectorBuscar, { timeout: 10000 })
+        .should('exist')
+        .should('be.visible')
+        .then(($btn) => {
+            cy.wrap($btn).click({ force: true });
+        });
+
+    // Esperar explícitamente a que se cargue la cancha favorita, aunque esté deshabilitada
+    const selectorCarga = `#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_${COURT - 1}_cmdSeleccionarHora_${HOUR - 8}`;
+
+    cy.get('body').find(selectorCarga, { timeout: 10000 }).should('exist').then(() => {
+        probarCanchaPorLista(lista, 0, intento);
+    });
 }
 
-// function esperarRedireccionABilbaoKirolak(maxIntentos = 120) {
-//     let intentos = 0;
+function probarCanchaPorLista(lista, index, intento) {
+    if (index >= lista.length) {
+        if (intento < 2) {
+            cy.log('Ninguna cancha visible, reintentando...');
+            intentarSeleccionarCancha(intento + 1);
+        } else {
+            cy.screenshot(`fallo_seleccion_cancha_intento_${intento}`);
+            throw new Error('⚠️ No se pudo seleccionar ninguna cancha visible en los dos intentos.');
+        }
+        return;
+    }
 
-//     const comprobar = () => {
-//         return cy.location('origin').then((origin) => {
-//             if (origin.includes("bilbaokirolak.eus")) {
-//                 return cy.wrap(true);
-//             } else if (intentos >= maxIntentos) {
-//                 throw new Error("No se redirigió a Bilbao Kirolak en el tiempo esperado.");
-//             } else {
-//                 intentos++;
-//                 return cy.wait(1000).then(() => comprobar());
-//             }
-//         });
-//     };
+    const court = lista[index];
+    const selector = `#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_${court - 1}_cmdSeleccionarHora_${HOUR - 8}`;
 
-//     return comprobar();
-// }
+    cy.get('body').then($body => {
+        const $el = $body.find(selector);
+        if ($el.length > 0 && !$el.hasClass('aspNetDisabled')) {
+            cy.get(selector, { timeout: 10000 }).should('be.visible').click({ force: true }).then(() => {
+                cy.log(`✅ Cancha ${court} seleccionada`);
+            });
+        } else {
+            probarCanchaPorLista(lista, index + 1, intento);
+        }
+    });
+}
 
-// // Espera hasta que la hora del sistema sea >= 18
-// function esperarHastaLas18() {
-//   return new Cypress.Promise((resolve) => {
-//     const intentar = () => {
-//       const horaActual = new Date().getHours()
-//       if (horaActual >= 18) {
-//         resolve()
-//       } else {
-//         cy.log('No es hora aún, esperando 30s...')
-//         cy.get(selectorBuscar).click()
-//         setTimeout(intentar, 10000)
-//       }
-//     }
-//     intentar()
-//   })
-// }
-
-// // Espera hasta que el botón esté visible (verifica cada 500ms)
-// function esperarBotonVisible() {
-//   return new Cypress.Promise((resolve) => {
-//     const intentar = () => {
-//       cy.get('body').then(($body) => {
-//         if ($body.find(selectorHora).length > 0 && $body.find(selectorHora).is(':visible')) {
-//           resolve()
-//         } else {
-//           cy.get(selectorBuscar).click()
-//           setTimeout(intentar, 500)
-//         }
-//       })
-//     }
-//     intentar()
-//   })
-// }

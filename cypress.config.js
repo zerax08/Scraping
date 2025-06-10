@@ -25,6 +25,8 @@ module.exports = defineConfig({
                 COURT: process.env.COURT,
                 PAY_METHOD: process.env.PAY_METHOD,
                 PHONE: process.env.PHONE,
+                BIZUM_TIMEOUT: process.env.BIZUM_TIMEOUT,
+                FAVORITE_COURT: process.env.FAVORITE_COURT
             };
 
             // Prevent Vulkan/Chrome GPU warnings
