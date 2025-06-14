@@ -12,8 +12,6 @@ const PAY_METHOD = Number(Cypress.env("PAY_METHOD"));
 const BIZUM_TIMEOUT = Number(Cypress.env("BIZUM_TIMEOUT"));
 const FAVORITE_COURT = Cypress.env("FAVORITE_COURT") === "true";
 
-let intentos = 0;
-
 // Al inicio del test
 Cypress.on('uncaught:exception', (err, runnable) => {
     if (
@@ -63,17 +61,7 @@ Cypress.on('uncaught:exception', (err, runnable) => {
             cy.get(".dropdown-menu.show .inner", { timeout: 10000 }).contains("PADEL CUBIERTO").click();
             seleccionarFechaPorDia(DAY);
 
-/*             esperarHastaLaHora().then(() => {
-                cy.get(selectorBuscar).click();
-
-                // Intento de reserva
-                cy.screenshot(new Date().toISOString() + " - Search Page");
-                const hoursId = DAY == "sábado" || DAY == "domingo" ? HOUR - 9 : HOUR - 8;
-                cy.task("log", "Time is now " + new Date().toLocaleTimeString());
-                cy.get("#MainContent_rpHoras_a2HorasReserva_0_lstInstalaciones_0_lstHoras_" + (COURT - 1) + "_cmdSeleccionarHora_" + hoursId, { timeout: 10000 })
-                    .should("be.visible")
-                    .click(); */
-            if (DAY === 'domingo') {
+            if (DAY === 'domingo' || DAY === 'sábado') {
                 HOUR--;
             }
 
@@ -105,8 +93,6 @@ Cypress.on('uncaught:exception', (err, runnable) => {
                         cy.get('#bBizInit').should('not.be.disabled');
                         cy.get('#bBizInit').click();
                     });
-
-                    cy.screenshot(new Date().toISOString() + " - Bizum Page");
 
                     cy.wait(BIZUM_TIMEOUT);
 
@@ -213,12 +199,6 @@ function esperarHasta2MinutosAntes() {
 }
 
 function intentarSeleccionarCancha(intento = 1) {
-    // const ordenCancha = () => {
-    //     const canchas = Array.from({ length: 8 }, (_, i) => i + 1); // [1,2,3,...,8]
-    //     const sinFavorita = canchas.filter(c => c !== COURT);
-    //     return [COURT, ...sinFavorita];
-    // };
-
     const ordenCancha = () => {
         if (FAVORITE_COURT) {
             return [COURT]; // Solo intenta con la cancha favorita
